@@ -1,8 +1,10 @@
+import os.path
+
 import torch
 from transformers import BertTokenizer, BartForConditionalGeneration
 
 # ==== 路径设置 ====
-MODEL_PATH = r"E:\small\results\checkpoint-8500"  # 你的训练好的模型路径
+MODEL_PATH = os.path.join()  # 你的训练好的模型路径
 
 # ==== 加载 tokenizer 和模型 ====
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
