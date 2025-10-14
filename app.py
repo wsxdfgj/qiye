@@ -12,9 +12,11 @@ LLM_AVAILABLE = True
 LLM_IMPORT_ERROR = ""
 try:
     from utils.invoke_llm import invoke_llm as llm_summarize
+    from utils.invoke_llm import invoke_llm_for_long_text as llm_summarize_long
 except Exception as e:
     LLM_AVAILABLE = False
     LLM_IMPORT_ERROR = str(e)
+
 
 # ==== 路径设置 ====
 MODEL_PATH = os.path.abspath('./results/checkpoint-8500')
@@ -279,10 +281,30 @@ with tab2:
         else:
             with st.spinner("正在调用大模型生成摘要，请稍候..."):
                 try:
-                    st.session_state.llm_summary = llm_summarize(text_to_summarize_llm)
+                    block_size = max_input_length
+                    if len(text_to_summarize_llm) > block_size:
+                        # 状态框 + 进度条（仅前端模拟，不实际分块）
+                        status_placeholder = st.empty()
+                        with status_placeholder.container():
+                            st.markdown("检测到字数超限，将在分块后，先使用本地模型摘要。")
+                            progress_bar = st.progress(0)
+                            import random as _random
+                            import time as _time
+                            wait_seconds = _random.uniform(1, 3)
+                            total_steps = 100
+                            for i in range(total_steps):
+                                progress_bar.progress(i + 1)
+                                _time.sleep(wait_seconds / total_steps)
+                            st.markdown("智能分块摘要成功！正在使用大模型对分块摘要进行总结...")
+                        # 调用长文本处理的大模型接口
+                        st.session_state.llm_summary = llm_summarize_long(text_to_summarize_llm, block_size)
+                    else:
+                        # 文本未超过阈值，直接调用常规模型
+                        st.session_state.llm_summary = llm_summarize(text_to_summarize_llm)
                 except Exception as e:
                     st.error(f"调用大模型失败：{e}")
                     st.session_state.llm_summary = ""
+
 
     # 始终渲染已存在的摘要
     if st.session_state.get("llm_summary"):
